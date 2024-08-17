@@ -1,4 +1,4 @@
-"""Module of SigLIP the image encoder"""
+"""Torch module of SigLIP the image encoder"""
 
 from typing import Optional, Tuple
 import torch
