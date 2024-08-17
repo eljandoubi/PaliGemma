@@ -1,8 +1,8 @@
-#PaliGemma
+# PaliGemma
 
 Coding PaliGemma from scratch using pytorch.
 
-##Setup environment
+## Setup environment
 ```bash
 pip install -r requirements.txt
 ```
