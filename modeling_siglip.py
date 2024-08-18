@@ -19,10 +19,10 @@ class SiglipVisionConfig:
     patch_size: int = 16
     layer_norm_eps: float = 1e-6
     attention_dropout: float = 0.0
-    num_image_tokens: int = None
+    num_image_tokens: Optional[int] = None
     kwargs: InitVar[Optional[Dict[str, Any]]] = None
 
-    def __post_init__(self, kwargs: Optional[Dict[str, Any]]) -> None:
+    def __post_init__(self, kwargs: Optional[Dict[str, Any]]):
         if kwargs:
             for k, v in kwargs.items():
                 setattr(self, k, v)
@@ -31,9 +31,8 @@ class SiglipVisionConfig:
 class SiglipVisionEmbeddings(nn.Module):
     """SigLIP Embedding module"""
 
-    def __init__(self, config: SiglipVisionConfig) -> None:
+    def __init__(self, config: SiglipVisionConfig):
         super().__init__()
-        self.config = config
         self.patch_embedding = nn.Conv2d(
             in_channels=config.num_channels,
             out_channels=config.hidden_size,
@@ -50,7 +49,7 @@ class SiglipVisionEmbeddings(nn.Module):
             persistent=False
         )
 
-    def forward(self, pixel_values: torch.FloatTensor) -> torch.Tensor:
+    def forward(self, pixel_values: torch.FloatTensor) -> torch.FloatTensor:
         """Forward method"""
         # pixel_values: [Batch_Size, Channels, Height, Width]
         # Convolve the `patch_size` kernel over the image,
@@ -77,9 +76,8 @@ class SiglipVisionEmbeddings(nn.Module):
 class SiglipAttention(nn.Module):
     """SigLIP Attention module"""
 
-    def __init__(self, config: SiglipVisionConfig) -> None:
+    def __init__(self, config: SiglipVisionConfig):
         super().__init__()
-        self.config = config
         self.embed_dim = config.hidden_size
         self.num_heads = config.num_attention_heads
         self.head_dim = self.embed_dim // self.num_heads
@@ -93,8 +91,8 @@ class SiglipAttention(nn.Module):
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim)
 
     def forward(self,
-                hidden_states: torch.Tensor
-                ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+                hidden_states: torch.FloatTensor
+                ) -> Tuple[torch.FloatTensor]:
         """Forward method"""
         batch_size, seq_len, _ = hidden_states.size()
         # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Embed_Dim]
@@ -160,15 +158,14 @@ class SiglipAttention(nn.Module):
 class SiglipMLP(nn.Module):
     """MLP module"""
 
-    def __init__(self, config: SiglipVisionConfig) -> None:
+    def __init__(self, config: SiglipVisionConfig):
         super().__init__()
-        self.config = config
         self.fc1 = nn.Linear(config.hidden_size,
                              config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size,
                              config.hidden_size)
 
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+    def forward(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         """Forward method"""
         # [Batch_Size, Num_Patches, Embed_Dim]
         # -> [Batch_Size, Num_Patches, Intermediate_Size]
@@ -184,9 +181,8 @@ class SiglipMLP(nn.Module):
 class SiglipEncoderLayer(nn.Module):
     """SigLIP encoder layer"""
 
-    def __init__(self, config: SiglipVisionConfig) -> None:
+    def __init__(self, config: SiglipVisionConfig):
         super().__init__()
-        self.config = config
         self.self_attn = SiglipAttention(config)
         self.layer_norm1 = nn.LayerNorm(normalized_shape=config.hidden_size,
                                         eps=config.layer_norm_eps)
@@ -194,7 +190,7 @@ class SiglipEncoderLayer(nn.Module):
         self.layer_norm2 = nn.LayerNorm(normalized_shape=config.hidden_size,
                                         eps=config.layer_norm_eps)
 
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+    def forward(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         """Forward method"""
         # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Embed_Dim]
         residual = hidden_states
@@ -211,9 +207,8 @@ class SiglipEncoderLayer(nn.Module):
 class SiglipEncoder(nn.Module):
     """SigLIP encoder module"""
 
-    def __init__(self, config: SiglipVisionConfig) -> None:
+    def __init__(self, config: SiglipVisionConfig):
         super().__init__()
-        self.config = config
         self.layers = nn.ModuleList(
             [SiglipEncoderLayer(config) for _ in range(config.num_hidden_layers)]
         )
@@ -230,15 +225,14 @@ class SiglipEncoder(nn.Module):
 class SiglipVisionTransformer(nn.Module):
     """SigLIP Transformer module"""
 
-    def __init__(self, config: SiglipVisionConfig) -> None:
+    def __init__(self, config: SiglipVisionConfig):
         super().__init__()
-        self.config = config
         self.embeddings = SiglipVisionEmbeddings(config)
         self.encoder = SiglipEncoder(config)
         self.post_layernorm = nn.LayerNorm(normalized_shape=config.hidden_size,
                                            eps=config.layer_norm_eps)
 
-    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+    def forward(self, pixel_values: torch.FloatTensor) -> torch.FloatTensor:
         """Forward method"""
         hidden_states = self.embeddings(pixel_values)
         last_hidden_state = self.encoder(inputs_embeds=hidden_states)
@@ -249,12 +243,11 @@ class SiglipVisionTransformer(nn.Module):
 class SiglipVisionModel(nn.Module):
     """SigLIP pytorch module"""
 
-    def __init__(self, config: SiglipVisionConfig) -> None:
+    def __init__(self, config: SiglipVisionConfig):
         super().__init__()
-        self.config = config
         self.vision_model = SiglipVisionTransformer(config)
 
-    def forward(self, pixel_values: torch.Tensor) -> Tuple:
+    def forward(self, pixel_values: torch.FloatTensor) -> torch.FloatTensor:
         """Forward method"""
         # [Batch_Size, Channels, Height, Width] -> [Batch_Size, Num_Patches, Embed_Dim]
         return self.vision_model(pixel_values)

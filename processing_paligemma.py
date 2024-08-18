@@ -28,7 +28,7 @@ def rescale(
 def resize(
         image: Image.Image,
         size: Tuple[int, int],
-        resample: Image.Resampling = None,
+        resample: Optional[Image.Resampling] = None,
         reducing_gap: Optional[int] = None,
 ) -> np.ndarray:
     """Resize an image(PIL Image)"""
@@ -53,9 +53,9 @@ def normalize(
 
 def process_images(
         images: List[Image.Image],
-        size: Union[int, Tuple[int]] = None,
-        resample: Image.Resampling = None,
-        rescale_factor: float = None,
+        size: Optional[Union[int, Tuple[int]]] = None,
+        resample: Optional[Image.Resampling] = None,
+        rescale_factor: Optional[float] = None,
         image_mean: Optional[Union[float, List[float]]] = None,
         image_std: Optional[Union[float, List[float]]] = None,
 ) -> List[np.ndarray]:
@@ -96,7 +96,7 @@ class PaliGemmaProcessor:
 
     def __init__(self, tokenizer: PreTrainedTokenizerFast,
                  num_image_tokens: int,
-                 image_size: int) -> None:
+                 image_size: int):
 
         self.image_seq_length = num_image_tokens
         self.image_size = image_size
