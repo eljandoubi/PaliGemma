@@ -38,25 +38,46 @@ class GemmaRotaryEmbedding(nn.Module):
     """Gemma Rotary Position Embedding"""
 
     def __init__(self, dim: int,
-                 max_position_embeddings: int = 2048,
                  base: float = 10000.,
                  ):
         super().__init__()
 
         self.dim = dim  # it is set to the head_dim
-        self.max_position_embeddings = max_position_embeddings
         self.base = base
 
         # Calculate the theta according to the formula theta_i = base^(2i/dim)
         # where i = 0, 1, 2, ..., dim // 2
-        inv_freq = 1.0 / (self.base ** (torch.arange(0, self.dim,
-                          2, dtype=torch.int64).float() / self.dim))
+        inv_freq = base ** (-torch.arange(0, dim) / dim)
         self.register_buffer("inv_freq", tensor=inv_freq, persistent=False)
 
     @torch.no_grad()
-    def forward(self, x, position_ids, seq_len=None):
+    def forward(self,
+                x: torch.FloatTensor,
+                position_ids: torch.LongTensor
+                ) -> Tuple[torch.FloatTensor]:
         """Forward method"""
-        return x, position_ids, seq_len
+        # x: [bs, num_attention_heads, seq_len, head_size]
+        # self.inv_freq.to(x.device)
+        # Copy the inv_freq tensor for batch in the sequence
+        # inv_freq_expanded: [Batch_Size, Head_Dim // 2, 1]
+        inv_freq_expanded = self.inv_freq[None, :, None].expand(
+            position_ids.shape[0], -1, 1)
+        # position_ids_expanded: [Batch_Size, 1, Seq_Len]
+        position_ids_expanded = position_ids[:, None, :].float()
+        device_type = x.device.type
+        device_type = device_type if isinstance(
+            device_type, str) and device_type != "mps" else "cpu"
+        with torch.autocast(device_type=device_type, enabled=False):
+            # Multiply each theta by the position (which is the argument of the sin and cos functions)
+            # freqs: [Batch_Size, Head_Dim // 2, 1] @ [Batch_Size, 1, Seq_Len]
+            # --> [Batch_Size, Seq_Len, Head_Dim // 2]
+            freqs = (inv_freq_expanded @ position_ids_expanded).transpose(1, 2)
+            # emb: [Batch_Size, Seq_Len, Head_Dim]
+            emb = torch.cat((freqs, freqs), dim=-1)
+            # cos, sin: [Batch_Size, Seq_Len, Head_Dim]
+            cos = emb.cos()
+            sin = emb.sin()
+        return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
 class GemmaAttention(nn.Module):
@@ -73,7 +94,6 @@ class GemmaAttention(nn.Module):
         self.head_dim = config.head_dim
         self.num_key_value_heads = config.num_key_value_heads
         self.num_key_value_groups = self.num_heads // self.num_key_value_heads
-        self.max_position_embeddings = config.max_position_embeddings
         self.rope_theta = config.rope_theta
         self.is_causal = True
 
@@ -97,7 +117,6 @@ class GemmaAttention(nn.Module):
 
         self.rotary_emb = GemmaRotaryEmbedding(
             dim=self.head_dim,
-            max_position_embeddings=self.max_position_embeddings,
             base=self.rope_theta,
         )
 
@@ -134,8 +153,8 @@ class GemmaAttention(nn.Module):
                                          ).transpose(1, 2)
 
         # [Batch_Size, Seq_Len, Head_Dim], [Batch_Size, Seq_Len, Head_Dim]
-        cos, sin = self.rotary_emb(value_states, position_ids, seq_len=None)
-        # [Batch_Size, Num_Heads_Q, Seq_Len, Head_Dim], 
+        cos, sin = self.rotary_emb(value_states, position_ids)
+        # [Batch_Size, Num_Heads_Q, Seq_Len, Head_Dim],
         # [Batch_Size, Num_Heads_KV, Seq_Len, Head_Dim]
         query_states, key_states = apply_rotary_pos_emb(
             query_states, key_states, cos, sin)

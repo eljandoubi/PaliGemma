@@ -1,4 +1,4 @@
-"""PaliGemma pytorch module"""
+"""PaliGemma pytorch module."""
 
 import math
 from typing import Optional, Tuple, Dict, Any, Union
@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 import torch
 from torch import nn
 from modeling_siglip import SiglipVisionConfig, SiglipVisionModel
-from modeling_gemma import GemmaConfig, GemmaForCausalLM, KVCache
+from modeling_gemma import GemmaConfig, GemmaForCausalLM
+from kv_cache import KVCache
 
 
 @dataclass
