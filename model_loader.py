@@ -4,6 +4,7 @@ import os
 import json
 import glob
 from typing import Tuple
+from tqdm import tqdm
 from transformers import AutoTokenizer
 from safetensors import safe_open
 from modeling_paligemma import (PaliGemmaForConditionalGeneration,
@@ -23,7 +24,7 @@ def load_hf_model(model_path: str,
 
     # ... and load them one by one in the tensors dictionary
     tensors = {}
-    for safetensors_file in safetensors_files:
+    for safetensors_file in tqdm(safetensors_files,desc="Load weights"):
         with safe_open(safetensors_file, framework="pt", device="cpu") as f:
             for key in f.keys():
                 tensors[key] = f.get_tensor(key)
@@ -31,7 +32,7 @@ def load_hf_model(model_path: str,
     # Load the model's config
     with open(os.path.join(model_path, "config.json"), "r", encoding="utf-8") as f:
         model_config_file = json.load(f)
-        config = PaliGemmaConfig(**model_config_file)
+        config = PaliGemmaConfig.from_dict(model_config_file)
 
     # Create the model using the configuration
     model = PaliGemmaForConditionalGeneration(config).to(device)

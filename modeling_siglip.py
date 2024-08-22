@@ -1,14 +1,15 @@
 """Torch module of SigLIP the image encoder"""
 
-from typing import Optional, Tuple, Dict, Any
-from dataclasses import dataclass, InitVar
+from typing import Optional, Tuple
+from dataclasses import dataclass
 import torch
 from torch import nn
 from torch.nn import functional as F
+from base_config import BaseConfig
 
 
 @dataclass
-class SiglipVisionConfig:
+class SiglipVisionConfig(BaseConfig):
     """Config dataclass for SigLIP module"""
     hidden_size: int = 768
     intermediate_size: int = 3072
@@ -20,12 +21,6 @@ class SiglipVisionConfig:
     layer_norm_eps: float = 1e-6
     attention_dropout: float = 0.0
     num_image_tokens: Optional[int] = None
-    kwargs: InitVar[Optional[Dict[str, Any]]] = None
-
-    def __post_init__(self, kwargs: Optional[Dict[str, Any]]):
-        if kwargs:
-            for k, v in kwargs.items():
-                setattr(self, k, v)
 
 
 class SiglipVisionEmbeddings(nn.Module):
@@ -219,7 +214,7 @@ class SiglipEncoder(nn.Module):
         for encoder_layer in self.layers:
             # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Embed_Dim]
             hidden_states = encoder_layer(hidden_states)
-        return inputs_embeds
+        return hidden_states
 
 
 class SiglipVisionTransformer(nn.Module):
