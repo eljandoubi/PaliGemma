@@ -136,7 +136,7 @@ class PaliGemmaProcessor:
         pixel_values = np.stack(arrays=pixel_values,
                                 axis=0)
         # Convert the numpy array to a PyTorch tensor
-        pixel_values = torch.from_numpy(ndarray=pixel_values)
+        pixel_values = torch.from_numpy(pixel_values)
         # Prepend a `self.image_seq_length` number of image tokens 
         # to the prompt
         input_strings = [

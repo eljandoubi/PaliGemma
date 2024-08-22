@@ -1,7 +1,7 @@
 """Main code to run inference."""
 
 from typing import Dict, Optional
-
+from tqdm import tqdm
 from PIL import Image
 import torch
 import fire
@@ -58,7 +58,7 @@ def test_inference(
     stop_token = processor.tokenizer.eos_token_id
     generated_tokens = []
 
-    for _ in range(max_tokens_to_generate):
+    for _ in tqdm(range(max_tokens_to_generate),desc="Tokens generated"):
         # Get the model outputs
         outputs = model(
             input_ids=input_ids,

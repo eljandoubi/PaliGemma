@@ -1,17 +1,18 @@
 """pytorch module"""
 
 import math
-from typing import Optional, Tuple, Dict, Any, Union
-from dataclasses import dataclass, InitVar
+from typing import Optional, Tuple, Dict, Union
+from dataclasses import dataclass
 import torch
 from torch import nn
 from torch.nn import functional as F
+from base_config import BaseConfig
 from kv_cache import KVCache
 from utils import apply_rotary_pos_emb, repeat_kv
 
 
 @dataclass
-class GemmaConfig:
+class GemmaConfig(BaseConfig):
     """Config dataclass for Gemma module"""
     vocab_size: int
     hidden_size: int
@@ -26,12 +27,6 @@ class GemmaConfig:
     attention_bias: bool = False
     attention_dropout: float = 0.0
     pad_token_id: Optional[int] = None
-    kwargs: InitVar[Optional[Dict[str, Any]]] = None
-
-    def __post_init__(self, kwargs: Optional[Dict[str, Any]]):
-        if kwargs:
-            for k, v in kwargs.items():
-                setattr(self, k, v)
 
 
 class GemmaRotaryEmbedding(nn.Module):
@@ -47,7 +42,7 @@ class GemmaRotaryEmbedding(nn.Module):
 
         # Calculate the theta according to the formula theta_i = base^(2i/dim)
         # where i = 0, 1, 2, ..., dim // 2
-        inv_freq = base ** (-torch.arange(0, dim) / dim)
+        inv_freq = base ** (-torch.arange(0, dim, 2) / dim)
         self.register_buffer("inv_freq", tensor=inv_freq, persistent=False)
 
     @torch.no_grad()
@@ -259,7 +254,9 @@ class GemmaRMSNorm(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward method"""
-        return x
+        output = self._norm(x.float())
+        output = output * (1.0 + self.weight.float())
+        return output.type_as(x)
 
 
 class GemmaDecoderLayer(nn.Module):

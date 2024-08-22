@@ -5,13 +5,14 @@ from typing import Optional, Tuple, Dict, Any, Union
 from dataclasses import dataclass, field
 import torch
 from torch import nn
+from base_config import BaseConfig
 from modeling_siglip import SiglipVisionConfig, SiglipVisionModel
 from modeling_gemma import GemmaConfig, GemmaForCausalLM
 from kv_cache import KVCache
 
 
 @dataclass
-class PaliGemmaConfig:
+class PaliGemmaConfig(BaseConfig):
     """Config class for PaliGemma module"""
 
     vision_config: Dict[str, Any] = field(default_factory=dict)
@@ -25,10 +26,9 @@ class PaliGemmaConfig:
     is_encoder_decoder: bool = False
 
     def __post_init__(self):
-        self.vision_config = SiglipVisionConfig(**self.vision_config)
-        self.text_config = GemmaConfig(
-            **self.text_config,
-            pad_token_id=self.pad_token_id)
+        self.vision_config = SiglipVisionConfig.from_dict(self.vision_config)
+        self.text_config["pad_token_id"]=self.pad_token_id
+        self.text_config = GemmaConfig.from_dict(self.text_config)
 
         # Update the vocab size from text_config
         self.vocab_size = self.text_config.vocab_size
@@ -59,10 +59,10 @@ class PaliGemmaForConditionalGeneration(nn.Module):
 
     def __init__(self, config: PaliGemmaConfig):
         super().__init__()
+        self.config = config
         self.vision_tower = SiglipVisionModel(config=config.vision_config)
         self.multi_modal_projector = PaliGemmaMultiModelProjector(
             config=config)
-        self.vocab_size = config.vocab_size
         self.hidden_size = config.hidden_size
         self.image_token_index = config.image_token_index
         self.language_model = GemmaForCausalLM(config=config.text_config)
