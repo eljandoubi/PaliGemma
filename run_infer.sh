@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODEL_PATH="$HOME/projects/paligemma-weights/paligemma-3b-pt-224"
+MODEL_PATH="$HOME/paligemma-weights/paligemma-3b-pt-224"
 PROMPT="this building is "
 IMAGE_FILE_PATH="EiffelTower.jpg"
 MAX_TOKENS_TO_GENERATE=100
