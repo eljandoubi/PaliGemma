@@ -13,8 +13,8 @@ cd PaliGemma
 ```
 * Make virtual environment.
 ```bash
-conda create -n PG python=3.12
-conda acctivate PG
+conda create -n PG python=3.12 -y
+conda activate PG
 ```
 * Install dependencies.
 ```bash
@@ -36,6 +36,12 @@ chmod +x run_infer.sh
 * Run inference.
 ```bash
 ./run_infer.sh
+```
+## Costumized tests
+You can change these variables: `PROMPT` and `IMAGE_FILE_PATH` in `run_infer.sh` in order to run on your own test case.
+```bash
+PROMPT="this building is "
+IMAGE_FILE_PATH="EiffelTower.jpg"
 ```
 
 
