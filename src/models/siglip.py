@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 from torch.nn import functional as F
-from base_config import BaseConfig
+from src.configs.base_config import BaseConfig
 
 
 @dataclass
