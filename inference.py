@@ -1,15 +1,18 @@
 """Main code to run inference."""
 
-from typing import Dict, Optional
+import warnings
+from typing import Dict
+
 from tqdm import tqdm
 from PIL import Image
 import torch
 import fire
+from dotenv import load_dotenv
 
-from processing_paligemma import PaliGemmaProcessor
-from kv_cache import KVCache
-from modeling_paligemma import PaliGemmaForConditionalGeneration
-from model_loader import load_hf_model
+from src.processors.paligemma_processor import PaliGemmaProcessor
+from src.utils.kv_cache import KVCache
+from src.models.paligemma import PaliGemmaForConditionalGeneration
+from src.utils.model_loader import load_hf_model
 
 
 def move_inputs_to_device(model_inputs: Dict[str, torch.Tensor],
@@ -93,7 +96,7 @@ def test_inference(
     decoded = processor.tokenizer.decode(
         generated_tokens, skip_special_tokens=True)
 
-    print(prompt + decoded)
+    print("The output :",prompt + decoded)
 
 
 def _sample_top_p(probs: torch.Tensor, p: float) -> torch.Tensor:
@@ -119,15 +122,16 @@ def _sample_top_p(probs: torch.Tensor, p: float) -> torch.Tensor:
 
 
 def main(
-    model_path: Optional[str] = None,
-    prompt: Optional[str] = None,
-    image_file_path: Optional[str] = None,
-    max_tokens_to_generate: int = 100,
-    temperature: float = 0.8,
-    top_p: float = 0.9,
-    do_sample: bool = False,
-    only_cpu: bool = False,
-) -> None:
+        model_id: str,
+        model_path: str,
+        prompt: str,
+        image_file_path: str,
+        max_tokens_to_generate: int = 100,
+        temperature: float = 0.8,
+        top_p: float = 0.9,
+        do_sample: bool = False,
+        only_cpu: bool = False,
+        ) -> None:
     """Main process"""
     device = "cpu"
 
@@ -140,7 +144,7 @@ def main(
     print("Device in use:", device)
 
     print("Loading model")
-    model, tokenizer = load_hf_model(model_path, device)
+    model, tokenizer = load_hf_model(model_id, model_path, device)
     model = model.to(device).eval()
 
     num_image_tokens = model.config.vision_config.num_image_tokens
@@ -163,4 +167,6 @@ def main(
 
 
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
+    print("Is there .env file:",load_dotenv())
     fire.Fire(main)

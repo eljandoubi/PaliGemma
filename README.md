@@ -1,49 +1,34 @@
-# PaliGemma
+<p align="center">
+    <a href="docs/imgs/PaLiGemma-Model-Logo.jpg">
+        <img src="docs/imgs/PaLiGemma-Model-Logo.jpg" alt="Jumanji logo" width="50%"/>
+    </a>
+</p>
 
 Coding PaliGemma from scratch using pytorch for inference.
 
 ## Setup environment
-* Clone the repository.
+* Clone the repository and Go to PaliGemma directory.
 ```bash
-git clone https://github.com/eljandoubi/PaliGemma.git
-```
-* Go to PaliGemma directory.
-```bash
-cd PaliGemma
-```
-* Make virtual environment.
-```bash
-conda create -n PG python=3.12 -y
-conda activate PG
-```
-* Install dependencies.
-```bash
-pip install -r requirements.txt
-```
-* Make weights folder.
-
-```bash
-mkdir -p $HOME/paligemma-weights/paligemma-3b-pt-224
+git clone https://github.com/eljandoubi/PaliGemma.git & cd PaliGemma
 ```
 
-* Download PaliGemma weights from [paligemma-3b-pt-224](https://huggingface.co/google/paligemma-3b-pt-224/tree/main) to `paligemma-3b-pt-224` folder.
-
-* Change the mode of `run_infer.sh` to execution.
+* Build environment.
 ```bash
-chmod +x run_infer.sh
+make build
 ```
 
 * Run inference.
 ```bash
-./run_infer.sh
+make run
 ```
-## Costumized tests
-You can change these variables: `PROMPT` and `IMAGE_FILE_PATH` in `run_infer.sh` in order to run on your own test case.
+
+* Clean environment.
 ```bash
-PROMPT="this building is "
-IMAGE_FILE_PATH="EiffelTower.jpg"
+make clean
 ```
 
-
-
-
+## Costumized tests
+You can change these variables: `PROMPT` and `IMAGE_FILE_PATH` in order to run on your own test case.
+```bash
+make run PROMPT="this building is " IMAGE_FILE_PATH="sample/EiffelTower.jpg"
+```

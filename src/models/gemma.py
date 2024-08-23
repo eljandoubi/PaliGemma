@@ -6,9 +6,9 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 from torch.nn import functional as F
-from base_config import BaseConfig
-from kv_cache import KVCache
-from utils import apply_rotary_pos_emb, repeat_kv
+from src.configs.base_config import BaseConfig
+from src.utils.kv_cache import KVCache
+from src.utils.tools import apply_rotary_pos_emb, repeat_kv
 
 
 @dataclass
