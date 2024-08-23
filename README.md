@@ -9,7 +9,7 @@ Coding PaliGemma from scratch using pytorch for inference.
 ## Setup environment
 * Clone the repository and Go to PaliGemma directory.
 ```bash
-git clone https://github.com/eljandoubi/PaliGemma.git & cd PaliGemma
+git clone https://github.com/eljandoubi/PaliGemma.git && cd PaliGemma
 ```
 
 * Build environment.
