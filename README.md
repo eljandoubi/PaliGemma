@@ -4,6 +4,11 @@
     </a>
 </p>
 
+![License](https://img.shields.io/github/license/eljandoubi/PaliGemma)
+![Linux](https://img.shields.io/github/actions/workflow/status/eljandoubi/PaliGemma/python-package-conda.yml?label=Linux)
+![Conda](https://img.shields.io/github/actions/workflow/status/eljandoubi/PaliGemma/python-package-conda.yml?label=Conda)
+
+
 Coding PaliGemma from scratch using pytorch for inference.
 
 ## Setup environment
