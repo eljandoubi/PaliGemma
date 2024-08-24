@@ -6,8 +6,6 @@ CONDA_BASE := $(shell conda info --base)
 
 # Env args
 ENV_NAME=PGenv
-REQUIREMENTS=requirements.txt
-
 
 # Inference args
 MODEL_ID=google/paligemma-3b-pt-224
