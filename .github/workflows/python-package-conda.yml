@@ -21,9 +21,9 @@ jobs:
     - name: Build
       run: |
         make build
-    - name: Run
+    - name: Check
       run: |
-        make run
+        make check
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
     - name: Clean
