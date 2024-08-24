@@ -23,7 +23,7 @@ git clone https://github.com/eljandoubi/PaliGemma.git && cd PaliGemma
 make build
 ```
 
-## Run inference.
+## Run inference
 * Default test case.
 ```bash
 make run
@@ -35,7 +35,7 @@ You can change these variables: `PROMPT` and `IMAGE_FILE_PATH` in order to run o
 make run PROMPT="this building is " IMAGE_FILE_PATH="sample/EiffelTower.jpg"
 ```
 
-## Clean environment.
+## Clean environment
 ```bash
 make clean
 ```
