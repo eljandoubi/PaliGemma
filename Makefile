@@ -8,6 +8,7 @@ CONDA_BASE := $(shell conda info --base)
 ENV_NAME=PGenv
 REQUIREMENTS=requirements.txt
 
+
 # Inference args
 MODEL_ID=google/paligemma-3b-pt-224
 MODEL_PATH=$(HOME)/paligemma-weights
@@ -27,6 +28,10 @@ build:
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Please, make sure you have acces to HuggingFace Hub   <<<<<<<<<<<<<<********************" && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    If use have logged in to HF, ingnore me.              <<<<<<<<<<<<<<********************" && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Else create .env file and set HF_TOKEN='HF_TOKEN'     <<<<<<<<<<<<<<********************"
+
+check:
+	. check.sh
+
 
 run:
 	. $(CONDA_BASE)/etc/profile.d/conda.sh  &&\
