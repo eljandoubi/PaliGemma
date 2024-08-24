@@ -38,6 +38,7 @@ def load_hf_model(model_id: str,
                 tensors[key] = f.get_tensor(key)
 
     # Load the model's config
+    print("Load the model's config")
     with open(os.path.join(model_path, "config.json"), "r", encoding="utf-8") as f:
         model_config_file = json.load(f)
         config = PaliGemmaConfig.from_dict(model_config_file)
