@@ -18,6 +18,7 @@ def load_hf_model(model_id: str,
 
     
     token = os.environ.get("HF_TOKEN")
+    print("Found HF token:", token is not None)
     print(f"Download {model_id} from huggingface")
     hf.PaliGemmaForConditionalGeneration.from_pretrained(
         model_id,cache_dir=os.path.join(model_path,"tmp"),
