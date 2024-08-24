@@ -1,6 +1,6 @@
 <p align="center">
     <a href="docs/imgs/PaLiGemma-Model-Logo.jpg">
-        <img src="docs/imgs/PaLiGemma-Model-Logo.jpg" alt="Jumanji logo" width="50%"/>
+        <img src="docs/imgs/PaLiGemma-Model-Logo.jpg" width="50%"/>
     </a>
 </p>
 
