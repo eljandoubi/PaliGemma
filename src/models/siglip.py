@@ -208,7 +208,7 @@ class SiglipEncoder(nn.Module):
             [SiglipEncoderLayer(config) for _ in range(config.num_hidden_layers)]
         )
 
-    def forward(self, inputs_embeds: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs_embeds: torch.FloatTensor) -> torch.FloatTensor:
         """Forward method"""
         hidden_states = inputs_embeds
         for encoder_layer in self.layers:
