@@ -156,7 +156,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         assert torch.all(attention_mask == 1), "The input can not be padded "
         # 1. Extract the input embeddings
         # shape: (Batch_Size, Seq_Len, Hidden_Size)
-        inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
+        inputs_embeds: torch.FloatTensor = self.language_model.get_input_embeddings()(input_ids)
         # 2. Merge text and images
         # [Batch_Size, Channels, Height, Width] -> [Batch_Size, Num_Patches, Embed_Dim]
         selected_image_feature = self.vision_tower(

@@ -55,7 +55,7 @@ class GemmaRotaryEmbedding(nn.Module):
         # self.inv_freq.to(x.device)
         # Copy the inv_freq tensor for batch in the sequence
         # inv_freq_expanded: [Batch_Size, Head_Dim // 2, 1]
-        inv_freq_expanded = self.inv_freq[None, :, None].expand(
+        inv_freq_expanded: torch.FloatTensor = self.inv_freq[None, :, None].expand(
             position_ids.shape[0], -1, 1)
         # position_ids_expanded: [Batch_Size, 1, Seq_Len]
         position_ids_expanded = position_ids[:, None, :].float()
@@ -123,11 +123,11 @@ class GemmaAttention(nn.Module):
         # [Batch_Size, Seq_Len, Hidden_Size]
         bsz, q_len, _ = hidden_states.size()
         # [Batch_Size, Seq_Len, Num_Heads_Q * Head_Dim]
-        query_states = self.q_proj(hidden_states)
+        query_states: torch.FloatTensor = self.q_proj(hidden_states)
         # [Batch_Size, Seq_Len, Num_Heads_KV * Head_Dim]
-        key_states = self.k_proj(hidden_states)
+        key_states: torch.FloatTensor = self.k_proj(hidden_states)
         # [Batch_Size, Seq_Len, Num_Heads_KV * Head_Dim]
-        value_states = self.v_proj(hidden_states)
+        value_states: torch.FloatTensor = self.v_proj(hidden_states)
         # [Batch_Size, Num_Heads_Q, Seq_Len, Head_Dim]
         query_states = query_states.view(bsz, q_len,
                                          self.num_heads,
@@ -155,7 +155,7 @@ class GemmaAttention(nn.Module):
             key_states, value_states = kv_cache.update(
                 key_states, value_states, self.layer_idx)
 
-        attn_output = F.scaled_dot_product_attention(query_states,
+        attn_output: torch.FloatTensor = F.scaled_dot_product_attention(query_states,
                                                      key_states,
                                                      value_states,
                                                      attn_mask=attention_mask,

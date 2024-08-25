@@ -53,7 +53,7 @@ class SiglipVisionEmbeddings(nn.Module):
         # [Batch_Size, Embed_Dim, Num_Patches_H, Num_Patches_W]
         # where Num_Patches_H = height // patch_size and Num_Patches_W = width
         # // patch_size
-        patch_embeds = self.patch_embedding(pixel_values)
+        patch_embeds: torch.FloatTensor = self.patch_embedding(pixel_values)
         # [Batch_Size, Embed_Dim, Num_Patches_H, Num_Patches_W]
         # -> [Batch_Size, Embed_Dim, Num_Patches]
         # where Num_Patches = Num_Patches_H * Num_Patches_W
@@ -77,7 +77,7 @@ class SiglipAttention(nn.Module):
         self.num_heads = config.num_attention_heads
         self.head_dim = self.embed_dim // self.num_heads
         # Equivalent to 1 / sqrt(self.head_dim)
-        self.scale = self.head_dim**-0.5
+        self.scale: float = self.head_dim**-0.5
         self.dropout = config.attention_dropout
 
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim)
@@ -91,9 +91,9 @@ class SiglipAttention(nn.Module):
         """Forward method"""
         batch_size, seq_len, _ = hidden_states.size()
         # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Embed_Dim]
-        query_states = self.q_proj(hidden_states)
-        key_states = self.k_proj(hidden_states)
-        value_states = self.v_proj(hidden_states)
+        query_states: torch.FloatTensor = self.q_proj(hidden_states)
+        key_states: torch.FloatTensor = self.k_proj(hidden_states)
+        value_states: torch.FloatTensor = self.v_proj(hidden_states)
         # [Batch_Size, Num_Heads, Num_Patches, Head_Dim]
         query_states = query_states.view(batch_size, seq_len,
                                          self.num_heads, self.head_dim
