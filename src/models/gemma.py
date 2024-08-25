@@ -8,7 +8,7 @@ from torch import nn
 from torch.nn import functional as F
 from src.configs.base_config import BaseConfig
 from src.utils.kv_cache import KVCache
-from src.utils.tools import apply_rotary_pos_emb, repeat_kv
+from src.utils.tools import apply_rotary_pos_emb
 
 
 @dataclass
@@ -120,7 +120,7 @@ class GemmaAttention(nn.Module):
                 attention_mask: Optional[torch.Tensor] = None,
                 position_ids: Optional[torch.LongTensor] = None,
                 kv_cache: Optional[KVCache] = None,
-                ) -> Tuple[torch.FloatTensor]:
+                ) -> torch.FloatTensor:
         """Forward method"""
 
         # [Batch_Size, Seq_Len, Hidden_Size]
@@ -158,35 +158,13 @@ class GemmaAttention(nn.Module):
             key_states, value_states = kv_cache.update(
                 key_states, value_states, self.layer_idx)
 
-        # We are not codding CUDA kernel so
-        # Repeat the key and values to match the number of heads of the query
-        key_states = repeat_kv(key_states, self.num_key_value_groups)
-        value_states = repeat_kv(value_states, self.num_key_value_groups)
-
-        # Perform the calculation as usual, Q * K^T / sqrt(head_dim). Shape:
-        # [Batch_Size, Num_Heads_Q, Seq_Len_Q, Seq_Len_KV]
-        attn_weights = torch.matmul(
-            query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
-
-        assert attention_mask is not None
-        attn_weights = attn_weights + attention_mask
-
-        # Apply the softmax
-        # [Batch_Size, Num_Heads_Q, Seq_Len_Q, Seq_Len_KV]
-        attn_weights = nn.functional.softmax(
-            attn_weights,
-            dim=-1,
-            dtype=torch.float32).to(
-            query_states.dtype)
-        # Apply the dropout
-        attn_weights = nn.functional.dropout(
-            attn_weights,
-            p=self.attention_dropout,
-            training=self.training)
-        # Multiply by the values. [Batch_Size, Num_Heads_Q, Seq_Len_Q,
-        # Seq_Len_KV] x [Batch_Size, Num_Heads_KV, Seq_Len_KV, Head_Dim] ->
-        # [Batch_Size, Num_Heads_Q, Seq_Len_Q, Head_Dim]
-        attn_output = torch.matmul(attn_weights, value_states)
+        attn_output = F.scaled_dot_product_attention(query_states,
+                                                    key_states,
+                                                    value_states, 
+                                                    attn_mask=attention_mask,
+                                                    dropout_p=self.attention_dropout,
+                                                    enable_gqa = True
+                                                    )
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
@@ -207,7 +185,7 @@ class GemmaAttention(nn.Module):
         # Multiply by W_o. [Batch_Size, Seq_Len_Q, Hidden_Size]
         attn_output = self.o_proj(attn_output)
 
-        return attn_output, attn_weights
+        return attn_output
 
 
 class GemmaMLP(nn.Module):
@@ -286,7 +264,7 @@ class GemmaDecoderLayer(nn.Module):
         hidden_states = self.input_layernorm(hidden_states)
 
         # [Batch_Size, Seq_Len, Hidden_Size]
-        hidden_states, _, = self.self_attn(
+        hidden_states = self.self_attn(
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             position_ids=position_ids,

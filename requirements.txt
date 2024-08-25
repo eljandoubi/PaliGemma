@@ -1,6 +1,9 @@
+# Use this file with pip to install packages
+--extra-index-url https://download.pytorch.org/whl/nightly/cu124
+
+torch
+torchvision
 fire==0.6.0
-torch==2.4.0
-torchvision==0.19.0
 tqdm==4.66.4
 tokenizers==0.19.1
 safetensors==0.4.2
