@@ -22,7 +22,7 @@ build:
 	. $(CONDA_BASE)/etc/profile.d/conda.sh && \
 	conda create --name $(ENV_NAME) python=3.12 -y && \
 	conda activate $(ENV_NAME) && \
-	pip install -r requirements.txt && \
+	pip install --pre -r requirements.txt && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Please, make sure you have acces to HuggingFace Hub   <<<<<<<<<<<<<<********************" && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    If use have logged in to HF, ingnore me.              <<<<<<<<<<<<<<********************" && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Else create .env file and set HF_TOKEN='HF_TOKEN'     <<<<<<<<<<<<<<********************"

@@ -1,6 +1,6 @@
 """Torch module of SigLIP the image encoder"""
 
-from typing import Optional, Tuple
+from typing import Optional
 from dataclasses import dataclass
 import torch
 from torch import nn
@@ -87,7 +87,7 @@ class SiglipAttention(nn.Module):
 
     def forward(self,
                 hidden_states: torch.FloatTensor
-                ) -> Tuple[torch.FloatTensor]:
+                ) -> torch.FloatTensor:
         """Forward method"""
         batch_size, seq_len, _ = hidden_states.size()
         # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Embed_Dim]
@@ -147,7 +147,7 @@ class SiglipAttention(nn.Module):
                                        self.embed_dim)
         # [Batch_Size, Num_Patches, Embed_Dim]
         attn_output = self.out_proj(attn_output)
-        return attn_output, attn_weights
+        return attn_output
 
 
 class SiglipMLP(nn.Module):
@@ -190,7 +190,7 @@ class SiglipEncoderLayer(nn.Module):
         # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Embed_Dim]
         residual = hidden_states
         hidden_states = self.layer_norm1(hidden_states)
-        hidden_states, _ = self.self_attn(hidden_states)
+        hidden_states = self.self_attn(hidden_states)
         hidden_states = residual + hidden_states
         residual = hidden_states
         hidden_states = self.layer_norm2(hidden_states)
