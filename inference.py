@@ -61,7 +61,7 @@ def test_inference(
     stop_token = processor.tokenizer.eos_token_id
     generated_tokens = []
 
-    for _ in tqdm(range(max_tokens_to_generate),desc="Tokens generated"):
+    for _ in tqdm(range(max_tokens_to_generate), desc="Tokens generated"):
         # Get the model outputs
         outputs = model(
             input_ids=input_ids,
@@ -96,7 +96,7 @@ def test_inference(
     decoded = processor.tokenizer.decode(
         generated_tokens, skip_special_tokens=True)
 
-    print("The output :",prompt + decoded)
+    print("The output :", prompt + decoded)
 
 
 def _sample_top_p(probs: torch.Tensor, p: float) -> torch.Tensor:
@@ -106,7 +106,8 @@ def _sample_top_p(probs: torch.Tensor, p: float) -> torch.Tensor:
     # (B, vocab_size)
     probs_sum = torch.cumsum(probs_sort, dim=-1)
     # (B, vocab_size)
-    # (Substracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
+    # (Substracting "probs_sort" shifts the cumulative sum
+    # by 1 position to the right before masking)
     mask = probs_sum - probs_sort > p
     # Zero out all the probabilities of tokens that are not selected by the
     # Top P
@@ -131,7 +132,7 @@ def main(
         top_p: float = 0.9,
         do_sample: bool = False,
         only_cpu: bool = False,
-        ) -> None:
+) -> None:
     """Main process"""
     device = "cpu"
 
@@ -168,5 +169,5 @@ def main(
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-    print("Is there .env file:",load_dotenv())
+    print("Is there .env file:", load_dotenv())
     fire.Fire(main)

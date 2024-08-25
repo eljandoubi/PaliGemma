@@ -8,7 +8,8 @@ from tqdm import tqdm
 import transformers as hf
 from safetensors import safe_open
 from src.models.paligemma import (PaliGemmaForConditionalGeneration,
-                                PaliGemmaConfig)
+                                  PaliGemmaConfig)
+
 
 def load_hf_model(model_id: str,
                   model_path: str,
@@ -16,15 +17,15 @@ def load_hf_model(model_id: str,
                   ) -> Tuple[PaliGemmaForConditionalGeneration, hf.AutoTokenizer]:
     """Load huggingface model into pytorch module."""
 
-    
     token = os.environ.get("HF_TOKEN")
     print("Found HF token:", token is not None)
     print(f"Download {model_id} from huggingface")
     hf.PaliGemmaForConditionalGeneration.from_pretrained(
-        model_id,cache_dir=os.path.join(model_path,"tmp"),
+        model_id, cache_dir=os.path.join(model_path, "tmp"),
         token=token).save_pretrained(model_path)
 
-    tokenizer = hf.AutoTokenizer.from_pretrained(model_id, padding_side="right")
+    tokenizer = hf.AutoTokenizer.from_pretrained(
+        model_id, padding_side="right")
     assert tokenizer.padding_side == "right"
 
     # Find all the *.safetensors files
@@ -32,7 +33,8 @@ def load_hf_model(model_id: str,
 
     # ... and load them one by one in the tensors dictionary
     tensors = {}
-    for safetensors_file in tqdm(safetensors_files,desc="Load weights to RAM"):
+    for safetensors_file in tqdm(
+            safetensors_files, desc="Load weights to RAM"):
         with safe_open(safetensors_file, framework="pt", device="cpu") as f:
             for key in f.keys():
                 tensors[key] = f.get_tensor(key)
