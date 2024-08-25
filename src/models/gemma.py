@@ -63,7 +63,8 @@ class GemmaRotaryEmbedding(nn.Module):
         device_type = device_type if isinstance(
             device_type, str) and device_type != "mps" else "cpu"
         with torch.autocast(device_type=device_type, enabled=False):
-            # Multiply each theta by the position (which is the argument of the sin and cos functions)
+            # Multiply each theta by the position
+            # (which is the argument of the sin and cos functions)
             # freqs: [Batch_Size, Head_Dim // 2, 1] @ [Batch_Size, 1, Seq_Len]
             # --> [Batch_Size, Seq_Len, Head_Dim // 2]
             freqs = (inv_freq_expanded @ position_ids_expanded).transpose(1, 2)
@@ -87,7 +88,7 @@ class GemmaAttention(nn.Module):
         self.num_heads = config.num_attention_heads
         self.head_dim = config.head_dim
         self.num_key_value_heads = config.num_key_value_heads
-        
+
         assert config.hidden_size % self.num_heads == 0
 
         self.q_proj = nn.Linear(config.hidden_size,
@@ -155,12 +156,12 @@ class GemmaAttention(nn.Module):
                 key_states, value_states, self.layer_idx)
 
         attn_output = F.scaled_dot_product_attention(query_states,
-                                                    key_states,
-                                                    value_states, 
-                                                    attn_mask=attention_mask,
-                                                    dropout_p=self.attention_dropout,
-                                                    enable_gqa = True
-                                                    )
+                                                     key_states,
+                                                     value_states,
+                                                     attn_mask=attention_mask,
+                                                     dropout_p=self.attention_dropout,
+                                                     enable_gqa=True
+                                                     )
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
