@@ -1,23 +1,22 @@
 """Main code to run inference."""
 
 import warnings
-from typing import Dict
 
-from tqdm import tqdm
-from PIL import Image
-import torch
 import fire
+import torch
 from dotenv import load_dotenv
+from PIL import Image
+from tqdm import tqdm
 
+from src.models.paligemma import PaliGemmaForConditionalGeneration
 from src.processors.paligemma_processor import PaliGemmaProcessor
 from src.utils.kv_cache import KVCache
-from src.models.paligemma import PaliGemmaForConditionalGeneration
 from src.utils.model_loader import load_hf_model
 
 
-def move_inputs_to_device(model_inputs: Dict[str, torch.Tensor],
-                          device: str
-                          ) -> Dict[str, torch.Tensor]:
+def move_inputs_to_device(
+    model_inputs: dict[str, torch.Tensor], device: str
+) -> dict[str, torch.Tensor]:
     """Move inputs to device"""
     model_inputs = {k: v.to(device) for k, v in model_inputs.items()}
     return model_inputs
@@ -28,7 +27,7 @@ def get_model_inputs(
     prompt: str,
     image_file_path: str,
     device: str,
-) -> Dict[str, torch.Tensor]:
+) -> dict[str, torch.Tensor]:
     """Get model inputs"""
     image = Image.open(image_file_path)
     images = [image]
@@ -47,7 +46,7 @@ def test_inference(
     max_tokens_to_generate: int,
     temperature: float,
     top_p: float,
-    do_sample: bool
+    do_sample: bool,
 ) -> None:
     """Run inference"""
     model_inputs = get_model_inputs(processor, prompt, image_file_path, device)
@@ -61,7 +60,7 @@ def test_inference(
     stop_token = processor.tokenizer.eos_token_id
     generated_tokens = []
 
-    for _ in tqdm(range(max_tokens_to_generate),desc="Tokens generated"):
+    for _ in tqdm(range(max_tokens_to_generate), desc="Tokens generated"):
         # Get the model outputs
         outputs = model(
             input_ids=input_ids,
@@ -74,8 +73,7 @@ def test_inference(
         # Sample the next token
         if do_sample:
             # Apply temperature
-            next_token_logits = torch.softmax(
-                next_token_logits / temperature, dim=-1)
+            next_token_logits = torch.softmax(next_token_logits / temperature, dim=-1)
             next_token = _sample_top_p(next_token_logits, top_p)
         else:
             next_token = torch.argmax(next_token_logits, dim=-1, keepdim=True)
@@ -93,10 +91,9 @@ def test_inference(
 
     generated_tokens = torch.cat(generated_tokens, dim=-1)
     # Decode the generated tokens
-    decoded = processor.tokenizer.decode(
-        generated_tokens, skip_special_tokens=True)
+    decoded = processor.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
-    print("The output :",prompt + decoded)
+    print("The output :", prompt + decoded)
 
 
 def _sample_top_p(probs: torch.Tensor, p: float) -> torch.Tensor:
@@ -106,7 +103,8 @@ def _sample_top_p(probs: torch.Tensor, p: float) -> torch.Tensor:
     # (B, vocab_size)
     probs_sum = torch.cumsum(probs_sort, dim=-1)
     # (B, vocab_size)
-    # (Substracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
+    # (Subtracting "probs_sort" shifts the cumulative sum by 1 position to
+    # the right before masking)
     mask = probs_sum - probs_sort > p
     # Zero out all the probabilities of tokens that are not selected by the
     # Top P
@@ -122,16 +120,16 @@ def _sample_top_p(probs: torch.Tensor, p: float) -> torch.Tensor:
 
 
 def main(
-        model_id: str,
-        model_path: str,
-        prompt: str,
-        image_file_path: str,
-        max_tokens_to_generate: int = 100,
-        temperature: float = 0.8,
-        top_p: float = 0.9,
-        do_sample: bool = False,
-        only_cpu: bool = False,
-        ) -> None:
+    model_id: str,
+    model_path: str,
+    prompt: str,
+    image_file_path: str,
+    max_tokens_to_generate: int = 100,
+    temperature: float = 0.8,
+    top_p: float = 0.9,
+    do_sample: bool = False,
+    only_cpu: bool = False,
+) -> None:
     """Main process"""
     device = "cpu"
 
@@ -168,5 +166,5 @@ def main(
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-    print("Is there .env file:",load_dotenv())
+    print("Is there .env file:", load_dotenv())
     fire.Fire(main)

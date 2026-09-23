@@ -22,13 +22,21 @@ build:
 	. $(CONDA_BASE)/etc/profile.d/conda.sh && \
 	conda create --name $(ENV_NAME) python=3.12 -y && \
 	conda activate $(ENV_NAME) && \
-	pip install -r requirements.txt && \
-	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Please, make sure you have acces to HuggingFace Hub   <<<<<<<<<<<<<<********************" && \
-	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    If use have logged in to HF, ingnore me.              <<<<<<<<<<<<<<********************" && \
-	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Else create .env file and set HF_TOKEN='HF_TOKEN'     <<<<<<<<<<<<<<********************"
+	pip install -r requirements.txt -r requirements-dev.txt && \
+	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Please, make sure you have access to HuggingFace Hub   <<<<<<<<<<<<<<********************" && \
+	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    If you are already logged in to HF, ignore me.         <<<<<<<<<<<<<<********************" && \
+	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Else create .env file and set HF_TOKEN='HF_TOKEN'      <<<<<<<<<<<<<<********************"
 
 check:
 	. check.sh
+
+lint:
+	ruff check .
+	ruff format --check .
+
+format:
+	ruff check --fix .
+	ruff format .
 
 
 run:
