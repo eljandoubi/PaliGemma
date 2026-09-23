@@ -1,11 +1,12 @@
 """pytorch module"""
 
 import math
-from typing import Optional, Tuple, Dict, Union
 from dataclasses import dataclass
+
 import torch
 from torch import nn
 from torch.nn import functional as F
+
 from src.configs.base_config import BaseConfig
 from src.utils.kv_cache import KVCache
 from src.utils.tools import apply_rotary_pos_emb, repeat_kv
@@ -14,6 +15,7 @@ from src.utils.tools import apply_rotary_pos_emb, repeat_kv
 @dataclass
 class GemmaConfig(BaseConfig):
     """Config dataclass for Gemma module"""
+
     vocab_size: int
     hidden_size: int
     intermediate_size: int
@@ -26,15 +28,17 @@ class GemmaConfig(BaseConfig):
     rope_theta: float = 10000.0
     attention_bias: bool = False
     attention_dropout: float = 0.0
-    pad_token_id: Optional[int] = None
+    pad_token_id: int | None = None
 
 
 class GemmaRotaryEmbedding(nn.Module):
     """Gemma Rotary Position Embedding"""
 
-    def __init__(self, dim: int,
-                 base: float = 10000.,
-                 ):
+    def __init__(
+        self,
+        dim: int,
+        base: float = 10000.0,
+    ):
         super().__init__()
 
         self.dim = dim  # it is set to the head_dim
@@ -46,24 +50,24 @@ class GemmaRotaryEmbedding(nn.Module):
         self.register_buffer("inv_freq", tensor=inv_freq, persistent=False)
 
     @torch.no_grad()
-    def forward(self,
-                x: torch.FloatTensor,
-                position_ids: torch.LongTensor
-                ) -> Tuple[torch.FloatTensor]:
+    def forward(
+        self, x: torch.FloatTensor, position_ids: torch.LongTensor
+    ) -> tuple[torch.FloatTensor]:
         """Forward method"""
         # x: [bs, num_attention_heads, seq_len, head_size]
         # self.inv_freq.to(x.device)
         # Copy the inv_freq tensor for batch in the sequence
         # inv_freq_expanded: [Batch_Size, Head_Dim // 2, 1]
-        inv_freq_expanded = self.inv_freq[None, :, None].expand(
-            position_ids.shape[0], -1, 1)
+        inv_freq_expanded = self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1)
         # position_ids_expanded: [Batch_Size, 1, Seq_Len]
         position_ids_expanded = position_ids[:, None, :].float()
         device_type = x.device.type
-        device_type = device_type if isinstance(
-            device_type, str) and device_type != "mps" else "cpu"
+        device_type = (
+            device_type if isinstance(device_type, str) and device_type != "mps" else "cpu"
+        )
         with torch.autocast(device_type=device_type, enabled=False):
-            # Multiply each theta by the position (which is the argument of the sin and cos functions)
+            # Multiply each theta by the position (which is the argument of
+            # the sin and cos functions)
             # freqs: [Batch_Size, Head_Dim // 2, 1] @ [Batch_Size, 1, Seq_Len]
             # --> [Batch_Size, Seq_Len, Head_Dim // 2]
             freqs = (inv_freq_expanded @ position_ids_expanded).transpose(1, 2)
@@ -78,7 +82,7 @@ class GemmaRotaryEmbedding(nn.Module):
 class GemmaAttention(nn.Module):
     """Gemma Attention"""
 
-    def __init__(self, config: GemmaConfig, layer_idx: Optional[int] = None):
+    def __init__(self, config: GemmaConfig, layer_idx: int | None = None):
         super().__init__()
         self.config = config
         self.layer_idx = layer_idx
@@ -94,33 +98,34 @@ class GemmaAttention(nn.Module):
 
         assert self.hidden_size % self.num_heads == 0
 
-        self.q_proj = nn.Linear(self.hidden_size,
-                                self.num_heads * self.head_dim,
-                                bias=config.attention_bias)
+        self.q_proj = nn.Linear(
+            self.hidden_size, self.num_heads * self.head_dim, bias=config.attention_bias
+        )
 
-        self.k_proj = nn.Linear(self.hidden_size,
-                                self.num_key_value_heads * self.head_dim,
-                                bias=config.attention_bias)
+        self.k_proj = nn.Linear(
+            self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias
+        )
 
-        self.v_proj = nn.Linear(self.hidden_size,
-                                self.num_key_value_heads * self.head_dim,
-                                bias=config.attention_bias)
+        self.v_proj = nn.Linear(
+            self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias
+        )
 
-        self.o_proj = nn.Linear(self.num_heads * self.head_dim,
-                                self.hidden_size,
-                                bias=config.attention_bias)
+        self.o_proj = nn.Linear(
+            self.num_heads * self.head_dim, self.hidden_size, bias=config.attention_bias
+        )
 
         self.rotary_emb = GemmaRotaryEmbedding(
             dim=self.head_dim,
             base=self.rope_theta,
         )
 
-    def forward(self,
-                hidden_states: torch.FloatTensor,
-                attention_mask: Optional[torch.Tensor] = None,
-                position_ids: Optional[torch.LongTensor] = None,
-                kv_cache: Optional[KVCache] = None,
-                ) -> Tuple[torch.FloatTensor]:
+    def forward(
+        self,
+        hidden_states: torch.FloatTensor,
+        attention_mask: torch.Tensor | None = None,
+        position_ids: torch.LongTensor | None = None,
+        kv_cache: KVCache | None = None,
+    ) -> tuple[torch.FloatTensor]:
         """Forward method"""
 
         # [Batch_Size, Seq_Len, Hidden_Size]
@@ -132,31 +137,24 @@ class GemmaAttention(nn.Module):
         # [Batch_Size, Seq_Len, Num_Heads_KV * Head_Dim]
         value_states = self.v_proj(hidden_states)
         # [Batch_Size, Num_Heads_Q, Seq_Len, Head_Dim]
-        query_states = query_states.view(bsz, q_len,
-                                         self.num_heads,
-                                         self.head_dim
-                                         ).transpose(1, 2)
+        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         # [Batch_Size, Num_Heads_KV, Seq_Len, Head_Dim]
-        key_states = key_states.view(bsz, q_len,
-                                     self.num_key_value_heads,
-                                     self.head_dim
-                                     ).transpose(1, 2)
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(
+            1, 2
+        )
         # [Batch_Size, Num_Heads_KV, Seq_Len, Head_Dim]
-        value_states = value_states.view(bsz, q_len,
-                                         self.num_key_value_heads,
-                                         self.head_dim
-                                         ).transpose(1, 2)
+        value_states = value_states.view(
+            bsz, q_len, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
 
         # [Batch_Size, Seq_Len, Head_Dim], [Batch_Size, Seq_Len, Head_Dim]
         cos, sin = self.rotary_emb(value_states, position_ids)
         # [Batch_Size, Num_Heads_Q, Seq_Len, Head_Dim],
         # [Batch_Size, Num_Heads_KV, Seq_Len, Head_Dim]
-        query_states, key_states = apply_rotary_pos_emb(
-            query_states, key_states, cos, sin)
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
         if kv_cache is not None:
-            key_states, value_states = kv_cache.update(
-                key_states, value_states, self.layer_idx)
+            key_states, value_states = kv_cache.update(key_states, value_states, self.layer_idx)
 
         # We are not codding CUDA kernel so
         # Repeat the key and values to match the number of heads of the query
@@ -165,24 +163,22 @@ class GemmaAttention(nn.Module):
 
         # Perform the calculation as usual, Q * K^T / sqrt(head_dim). Shape:
         # [Batch_Size, Num_Heads_Q, Seq_Len_Q, Seq_Len_KV]
-        attn_weights = torch.matmul(
-            query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
+        attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(
+            self.head_dim
+        )
 
         assert attention_mask is not None
         attn_weights = attn_weights + attention_mask
 
         # Apply the softmax
         # [Batch_Size, Num_Heads_Q, Seq_Len_Q, Seq_Len_KV]
-        attn_weights = nn.functional.softmax(
-            attn_weights,
-            dim=-1,
-            dtype=torch.float32).to(
-            query_states.dtype)
+        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
+            query_states.dtype
+        )
         # Apply the dropout
         attn_weights = nn.functional.dropout(
-            attn_weights,
-            p=self.attention_dropout,
-            training=self.training)
+            attn_weights, p=self.attention_dropout, training=self.training
+        )
         # Multiply by the values. [Batch_Size, Num_Heads_Q, Seq_Len_Q,
         # Seq_Len_KV] x [Batch_Size, Num_Heads_KV, Seq_Len_KV, Head_Dim] ->
         # [Batch_Size, Num_Heads_Q, Seq_Len_Q, Head_Dim]
@@ -190,10 +186,9 @@ class GemmaAttention(nn.Module):
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
-                f"`attn_output` should be of size {(bsz,
-                                                    self.num_heads,
-                                                    q_len,
-                                                    self.head_dim)}, but is"
+                f"`attn_output` should be of size {
+                    (bsz, self.num_heads, q_len, self.head_dim)
+                }, but is"
                 f" {attn_output.size()}"
             )
         # Make sure the sequence length is the second dimension. # [Batch_Size,
@@ -215,15 +210,9 @@ class GemmaMLP(nn.Module):
 
     def __init__(self, config: GemmaConfig):
         super().__init__()
-        self.gate_proj = nn.Linear(config.hidden_size,
-                                   config.intermediate_size,
-                                   bias=False)
-        self.up_proj = nn.Linear(config.hidden_size,
-                                 config.intermediate_size,
-                                 bias=False)
-        self.down_proj = nn.Linear(config.intermediate_size,
-                                   config.hidden_size,
-                                   bias=False)
+        self.gate_proj = nn.Linear(config.hidden_size, config.intermediate_size, bias=False)
+        self.up_proj = nn.Linear(config.hidden_size, config.intermediate_size, bias=False)
+        self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
 
     def forward(self, x: torch.FloatTensor) -> torch.FloatTensor:
         """Forward method"""
@@ -236,8 +225,7 @@ class GemmaMLP(nn.Module):
         # z = y * j # [Batch_Size, Seq_Len, Intermediate_Size]
         # z = self.down_proj(z) # [Batch_Size, Seq_Len, Intermediate_Size] ->
         # [Batch_Size, Seq_Len, Hidden_Size]
-        return self.down_proj(F.gelu(self.gate_proj(
-            x), approximate="tanh") * self.up_proj(x))
+        return self.down_proj(F.gelu(self.gate_proj(x), approximate="tanh") * self.up_proj(x))
 
 
 class GemmaRMSNorm(nn.Module):
@@ -269,24 +257,26 @@ class GemmaDecoderLayer(nn.Module):
         self.self_attn = GemmaAttention(config=config, layer_idx=layer_idx)
 
         self.mlp = GemmaMLP(config)
-        self.input_layernorm = GemmaRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps)
-        self.post_attention_layernorm = GemmaRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps)
+        self.input_layernorm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.post_attention_layernorm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
-    def forward(self,
-                hidden_states: torch.FloatTensor,
-                attention_mask: Optional[torch.Tensor] = None,
-                position_ids: Optional[torch.LongTensor] = None,
-                kv_cache: Optional[KVCache] = None,
-                ) -> torch.FloatTensor:
+    def forward(
+        self,
+        hidden_states: torch.FloatTensor,
+        attention_mask: torch.Tensor | None = None,
+        position_ids: torch.LongTensor | None = None,
+        kv_cache: KVCache | None = None,
+    ) -> torch.FloatTensor:
         """Forward method"""
         residual = hidden_states
         # [Batch_Size, Seq_Len, Hidden_Size]
         hidden_states = self.input_layernorm(hidden_states)
 
         # [Batch_Size, Seq_Len, Hidden_Size]
-        hidden_states, _, = self.self_attn(
+        (
+            hidden_states,
+            _,
+        ) = self.self_attn(
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -313,33 +303,28 @@ class GemmaModel(nn.Module):
     def __init__(self, config: GemmaConfig):
         super().__init__()
         self.hidden_size = config.hidden_size
-        self.embed_tokens = nn.Embedding(
-            config.vocab_size,
-            config.hidden_size,
-            config.pad_token_id)
-        self.layers = nn.ModuleList([GemmaDecoderLayer(config, layer_idx=i)
-                                     for i in range(config.num_hidden_layers)])
-        self.norm = GemmaRMSNorm(config.hidden_size,
-                                 eps=config.rms_norm_eps)
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
+        self.layers = nn.ModuleList(
+            [GemmaDecoderLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)]
+        )
+        self.norm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def get_input_embeddings(self):
         """Get input embeddings"""
         return self.embed_tokens
 
-    def forward(self,
-                attention_mask: Optional[torch.Tensor] = None,
-                position_ids: Optional[torch.LongTensor] = None,
-                inputs_embeds: Optional[torch.FloatTensor] = None,
-                kv_cache: Optional[KVCache] = None,
-                ) -> torch.FloatTensor:
+    def forward(
+        self,
+        attention_mask: torch.Tensor | None = None,
+        position_ids: torch.LongTensor | None = None,
+        inputs_embeds: torch.FloatTensor | None = None,
+        kv_cache: KVCache | None = None,
+    ) -> torch.FloatTensor:
         """Forward method"""
         # [Batch_Size, Seq_Len, Hidden_Size]
         hidden_states = inputs_embeds * math.sqrt(self.hidden_size)
         for decoder_layer in self.layers:
-            hidden_states = decoder_layer(hidden_states,
-                                          attention_mask,
-                                          position_ids,
-                                          kv_cache)
+            hidden_states = decoder_layer(hidden_states, attention_mask, position_ids, kv_cache)
 
         hidden_states = self.norm(hidden_states)
         return hidden_states
@@ -351,10 +336,7 @@ class GemmaForCausalLM(nn.Module):
     def __init__(self, config: GemmaConfig):
         super().__init__()
         self.model = GemmaModel(config)
-        self.lm_head = nn.Linear(
-            config.hidden_size,
-            config.vocab_size,
-            bias=False)
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
     def get_input_embeddings(self):
         """Get input embeddings."""
@@ -364,12 +346,13 @@ class GemmaForCausalLM(nn.Module):
         "Tie weights of the model Embedding and LM head."
         self.lm_head.weight = self.model.embed_tokens.weight
 
-    def forward(self,
-                attention_mask: Optional[torch.Tensor] = None,
-                position_ids: Optional[torch.LongTensor] = None,
-                inputs_embeds: Optional[torch.FloatTensor] = None,
-                kv_cache: Optional[KVCache] = None,
-                ) -> Dict[str, Union[torch.FloatTensor, KVCache]]:
+    def forward(
+        self,
+        attention_mask: torch.Tensor | None = None,
+        position_ids: torch.LongTensor | None = None,
+        inputs_embeds: torch.FloatTensor | None = None,
+        kv_cache: KVCache | None = None,
+    ) -> dict[str, torch.FloatTensor | KVCache]:
         """Forward method"""
         # input_embeds: [Batch_Size, Seq_Len, Hidden_Size]
         # hidden_states: [Batch_Size, Seq_Len, Hidden_Size]
