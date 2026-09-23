@@ -1,6 +1,5 @@
 """KVCache Class"""
 
-from typing import List, Tuple
 import torch
 
 
@@ -8,8 +7,8 @@ class KVCache:
     """Key Value Cache class"""
 
     def __init__(self):
-        self.key_cache: List[torch.Tensor] = []
-        self.value_cache: List[torch.Tensor] = []
+        self.key_cache: list[torch.Tensor] = []
+        self.value_cache: list[torch.Tensor] = []
 
     def num_items(self) -> int:
         """Count how many token stored"""
@@ -25,7 +24,7 @@ class KVCache:
         key_states: torch.Tensor,
         value_states: torch.Tensor,
         layer_idx: int,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Update Cache"""
         if len(self.key_cache) <= layer_idx:
             # If we never added anything to the KV-Cache of this layer, let's
@@ -36,10 +35,10 @@ class KVCache:
             # ... otherwise we concatenate the new keys with the existing ones.
             # each tensor has shape: [Batch_Size, Num_Heads_KV, Seq_Len,
             # Head_Dim]
-            self.key_cache[layer_idx] = torch.cat(
-                [self.key_cache[layer_idx], key_states], dim=-2)
+            self.key_cache[layer_idx] = torch.cat([self.key_cache[layer_idx], key_states], dim=-2)
             self.value_cache[layer_idx] = torch.cat(
-                [self.value_cache[layer_idx], value_states], dim=-2)
+                [self.value_cache[layer_idx], value_states], dim=-2
+            )
 
         # ... and then we return all the existing keys + the new ones.
         return self.key_cache[layer_idx], self.value_cache[layer_idx]

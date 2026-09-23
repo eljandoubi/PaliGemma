@@ -1,31 +1,49 @@
-name: Python Package using Conda
+name: CI
 
-on: [push]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-linux-conda:
+  lint:
+    name: Lint (ruff)
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 5
-
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
+        cache: pip
+    - name: Install ruff
+      run: pip install -r requirements-dev.txt
+    - name: Ruff check
+      run: ruff check --output-format=github .
+    - name: Ruff format --check
+      run: ruff format --check .
+
+  build:
+    name: Build (conda, Linux)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
-    - name: Build
-      run: |
-        make build
-    - name: Check
-      run: |
-        make check
+    - name: Build environment
+      run: make build
+    - name: Check HF token
+      run: make check
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
-    - name: Clean
-      run: |
-        make clean
+    - name: Clean environment
+      run: make clean
