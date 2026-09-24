@@ -17,33 +17,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Install uv
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       with:
-        python-version: '3.12'
-        cache: pip
-    - name: Install ruff
-      run: pip install -r requirements-dev.txt
+        enable-cache: true
+    - name: Install dependencies
+      run: uv sync --locked
     - name: Ruff check
-      run: ruff check --output-format=github .
+      run: uv run ruff check --output-format=github .
     - name: Ruff format --check
-      run: ruff format --check .
+      run: uv run ruff format --check .
 
-  build:
-    name: Build (conda, Linux)
-    needs: lint
+  test:
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Build environment
-      run: make build
-    - name: Check HF token
-      run: make check
-      env:
-        HF_TOKEN: ${{ secrets.HF_TOKEN }}
-    - name: Clean environment
-      run: make clean
+    - name: Install uv
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        enable-cache: true
+    - name: Install dependencies
+      run: uv sync --locked
+    - name: Run tests
+      run: uv run pytest
