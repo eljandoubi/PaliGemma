@@ -1,12 +1,6 @@
 # Use bash for all commands
 SHELL := /bin/bash
 
-# Path to Conda base directory
-CONDA_BASE := $(shell conda info --base)
-
-# Env args
-ENV_NAME=PGenv
-
 # Inference args
 MODEL_ID=google/paligemma-3b-pt-224
 MODEL_PATH=$(HOME)/paligemma-weights
@@ -19,10 +13,7 @@ DO_SAMPLE=False
 ONLY_CPU=False
 
 build:
-	. $(CONDA_BASE)/etc/profile.d/conda.sh && \
-	conda create --name $(ENV_NAME) python=3.12 -y && \
-	conda activate $(ENV_NAME) && \
-	pip install -r requirements.txt -r requirements-dev.txt && \
+	uv sync && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Please, make sure you have access to HuggingFace Hub   <<<<<<<<<<<<<<********************" && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    If you are already logged in to HF, ignore me.         <<<<<<<<<<<<<<********************" && \
 	echo "*************>>>>>>>>>>>>>>>>>>>>>>>>>    Else create .env file and set HF_TOKEN='HF_TOKEN'      <<<<<<<<<<<<<<********************"
@@ -31,18 +22,18 @@ check:
 	. check.sh
 
 lint:
-	ruff check .
-	ruff format --check .
+	uv run ruff check .
+	uv run ruff format --check .
 
 format:
-	ruff check --fix .
-	ruff format .
+	uv run ruff check --fix .
+	uv run ruff format .
 
+test:
+	uv run pytest
 
 run:
-	. $(CONDA_BASE)/etc/profile.d/conda.sh  &&\
-	conda activate $(ENV_NAME) &&\
-	python inference.py \
+	uv run python inference.py \
 		--model-id "$(MODEL_ID)" \
 		--model-path "$(MODEL_PATH)" \
 		--prompt "$(PROMPT)" \
@@ -54,5 +45,4 @@ run:
 		--only-cpu "$(ONLY_CPU)"
 
 clean:
-	conda remove --name $(ENV_NAME) --all -y
-	rm -rf $(MODEL_PATH)
+	rm -rf .venv $(MODEL_PATH)
